@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>カードゲーム</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         .center {
             text-align: center;
         }
         .card {
-            flex: 1 1 18%;
+            flex: 1 1 0;
             margin: 4px;
             padding: 10px;
             border: 1px solid #000;
@@ -17,8 +20,7 @@
             aspect-ratio: 2 / 3;
             background-size: cover;
             background-position: center;
-            min-width: 60px;
-            max-width: 100px;
+            min-width: 0;
         }
         .hidden {
             display: none;
@@ -42,14 +44,23 @@
             100% { opacity: 1; }
         }
         #card-table {
-            margin: 20px auto;
+            margin: 10px auto;
             text-align: center;
-            font-size: 18px;
-            display: inline-block;
+            font-size: 16px;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        #card-table table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
         }
         #card-table td {
-            padding: 5px;
+            padding: 4px;
             border: 1px solid #000;
+            font-size: 12px;
+            word-break: keep-all;
         }
         #controls {
             margin: 20px;
@@ -73,17 +84,16 @@
         #hand-cards,
         #table-cards {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             flex-wrap: nowrap;
-            overflow-x: auto;
             gap: 5px;
             padding: 10px;
+            max-width: 100%;
         }
 
         @media screen and (max-width: 480px) {
             .card {
-                min-width: 50px;
-                max-width: 70px;
+                padding: 6px;
             }
             #played-count {
                 font-size: 1em;
