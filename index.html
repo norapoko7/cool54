@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カードゲーム</title>
+    <style>
+        .center {
+            text-align: center;
+        }
+        .card {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px;
+            border: 1px solid #000;
+            cursor: pointer;
+            width: 100px; /* 画像の幅に合わせて調整 */
+            height: 150px; /* 画像の高さに合わせて調整 */
+            background-size: cover;
+            background-position: center;
+        }
+        .hidden {
+            display: none;
+        }
+        #game-over {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 5px;
+            font-size: 1.5em;
+            z-index: 1000; /* 他の要素の上に表示 */
+            animation: blink 1s step-start infinite; /* 点滅アニメーション */
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        #card-table {
+            margin: 20px auto;
+            text-align: center;
+            font-size: 18px;
+            display: inline-block; /* 表を中央に配置 */
+        }
+        #card-table td {
+            padding: 5px;
+            border: 1px solid #000;
+        }
+        #controls {
+            margin: 20px;
+            text-align: center;
+        }
+        #played-count {
+            margin-left: 20px;
+            font-size: 1.2em;
+        }
+        #score-list {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #score-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #score-list li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="center">
+        <div id="controls">
+            <button onclick="startGame()">スタート</button>
+            <div id="played-count">COUNT: 0</div>
+            <button onclick="showScores()">ランキング表示</button>
+        </div>
+        <div id="card-table" class="center">
+            <table>
+                <tr>
+                    <td>♠</td>
+                    <td>A</td>
+                    <td>2</td>
+                    <td>3</td>
+                    <td>4</td>
+                    <td>5</td>
+                    <td>6</td>
+                    <td>7</td>
+                    <td>8</td>
+                    <td>9</td>
+                    <td>10</td>
+                    <td>J</td>
+                    <td>Q</td>
+                    <td>K</td>
+                    <td>♠</td>
+                </tr>
+                <tr>
+                    <td>♡</td>
+                    <td>A</td>
+                    <td>2</td>
+                    <td>3</td>
+                    <td>4</td>
+                    <td>5</td>
+                    <td>6</td>
+                    <td>7</td>
+                    <td>8</td>
+                    <td>9</td>
+                    <td>10</td>
+                    <td>J</td>
+                    <td>Q</td>
+                    <td>K</td>
+                    <td>♡</td>
+                </tr>
+                <tr>
+                    <td>♣</td>
+                    <td>A</td>
+                    <td>2</td>
+                    <td>3</td>
+                    <td>4</td>
+                    <td>5</td>
+                    <td>6</td>
+                    <td>7</td>
+                    <td>8</td>
+                    <td>9</td>
+                    <td>10</td>
+                    <td>J</td>
+                    <td>Q</td>
+                    <td>K</td>
+                    <td>♣</td>
+                </tr>
+                <tr>
+                    <td>♢</td>
+                    <td>A</td>
+                    <td>2</td>
+                    <td>3</td>
+                    <td>4</td>
+                    <td>5</td>
+                    <td>6</td>
+                    <td>7</td>
+                    <td>8</td>
+                    <td>9</td>
+                    <td>10</td>
+                    <td>J</td>
+                    <td>Q</td>
+                    <td>K</td>
+                    <td>♢</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div id="game-over" class="hidden">
+        <h2>ゲームオーバー</h2>
+    </div>
+    <div id="board" class="center">
+        <div id="table" class="center">
+            <h3>場</h3>
+            <div id="table-cards"></div>
+        </div>
+        <div id="hand" class="center">
+            <h3>手札</h3>
+            <div id="hand-cards"></div>
+        </div>
+    </div>
+    <div id="score-list" class="center">
+        <!-- ランキングが表示される場所 -->
+    </div>
+
+    <script>
+        const suits = ['♠', '♡', '♣', '♢'];
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        let deck = [];
+        let hand = [];
+        let table = [];
+        let playedCount = 0;
+        let gameStarted = false;
+
+        function createDeck() {
+            deck = [];
+            for (let suitIndex = 0; suitIndex < suits.length; suitIndex++) {
+                for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
+                    deck.push({
+                        suit: suits[suitIndex],
+                        value: values[valueIndex],
+                        index: suitIndex * 13 + valueIndex
+                    });
+                }
+            }
+            deck = shuffle(deck);
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function dealHand() {
+            hand = [];
+            for (let i = 0; i < 5; i++) {
+                hand.push(deck.pop());
+            }
+            updateHandDisplay();
+        }
+
+        function updateHandDisplay() {
+            const handDiv = document.getElementById('hand-cards');
+            handDiv.innerHTML = '';
+            hand.forEach((card, index) => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.style.backgroundImage = `url('images/${card.index}.png')`;
+                cardDiv.onclick = () => playCard(index, cardDiv);
+                handDiv.appendChild(cardDiv);
+            });
+        }
+
+        function updateTableDisplay() {
+            const tableDiv = document.getElementById('table-cards');
+            tableDiv.innerHTML = '';
+            if (table.length > 0) {
+                const topCard = table[table.length - 1];
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.style.backgroundImage = `url('images/${topCard.index}.png')`;
+                tableDiv.appendChild(cardDiv);
+            }
+        }
+
+        function playCard(index, cardDiv) {
+            const card = hand[index];
+            if (canPlayCard(card)) {
+                table.push(card);
+                const newCard = findReplacementCard();
+                if (newCard) {
+                    hand[index] = newCard;
+                } else {
+                    hand.splice(index, 1);
+                }
+                updateTableDisplay();
+                updateHandDisplay();
+                markCardOnTable(card);
+                playedCount++;
+                updatePlayedCountDisplay();
+                checkGameOver();
+            }
+        }
+
+        function canPlayCard(card) {
+            if (table.length === 0) return true;
+            const topCard = table[table.length - 1];
+            return card.suit === topCard.suit || card.value === topCard.value;
+        }
+
+        function findReplacementCard() {
+            for (let i = 0; i < deck.length; i++) {
+                if (hand.some(card => deck[i].suit === card.suit || deck[i].value === card.value)) {
+                    return deck.splice(i, 1)[0];
+                }
+            }
+            return null;
+        }
+
+        function updateCardTable() {
+            const rows = document.querySelectorAll('#card-table tr');
+            rows.forEach(row => {
+                row.querySelectorAll('td').forEach(cell => {
+                    cell.textContent = cell.dataset.originalText;
+                });
+            });
+        }
+
+        function markCardOnTable(card) {
+            const suitIndex = suits.indexOf(card.suit);
+            const valueIndex = values.indexOf(card.value) + 1;
+            const rows = document.querySelectorAll('#card-table tr');
+            rows.forEach((row, rowIndex) => {
+                if (rowIndex === suitIndex) {
+                    row.querySelectorAll('td')[valueIndex].textContent = '';
+                }
+            });
+        }
+
+        function checkGameOver() {
+            if (!hand.some(canPlayCard)) {
+                document.getElementById('game-over').classList.remove('hidden');
+                updateTableDisplay();
+                saveScore(playedCount); // ゲームオーバー時にスコアを保存
+            }
+        }
+
+        function startGame() {
+            document.getElementById('game-over').classList.add('hidden');
+            document.getElementById('board').classList.remove('hidden');
+            createDeck();
+            dealHand();
+            table = [];
+            playedCount = 0;
+            updateTableDisplay();
+            gameStarted = true;
+            updateHandDisplay();
+            updateCardTable();
+            updatePlayedCountDisplay();
+        }
+
+        function updatePlayedCountDisplay() {
+            document.getElementById('played-count').textContent = `COUNT: ${playedCount}`;
+        }
+
+        function saveScore(score) {
+            const scores = JSON.parse(localStorage.getItem('scores')) || [];
+            scores.push(score);
+            scores.sort((a, b) => b - a); // 高いスコア順にソート
+            if (scores.length > 10) scores.length = 10; // トップ10まで
+            localStorage.setItem('scores', JSON.stringify(scores));
+        }
+
+        function showScores() {
+            const scores = JSON.parse(localStorage.getItem('scores')) || [];
+            const scoreListDiv = document.getElementById('score-list');
+            scoreListDiv.innerHTML = '<h3>ランキング</h3><ul>' +
+                scores.map(score => `<li>${score}</li>`).join('') +
+                '</ul>';
+        }
+
+        window.onload = () => {
+            updateHandDisplay();
+            updateTableDisplay();
+            document.getElementById('board').classList.add('hidden');
+            const rows = document.querySelectorAll('#card-table tr');
+            rows.forEach(row => {
+                row.querySelectorAll('td').forEach(cell => {
+                    cell.dataset.originalText = cell.textContent;
+                });
+            });
+            updateCardTable();
+        }
+    </script>
+</body>
+</html>
